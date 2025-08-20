@@ -82,16 +82,16 @@ WSGI_APPLICATION = 'config.wsgi.application'
 #     }
 # }
 
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": "mini_pm",
-#         "USER": "mini_pm",
-#         "PASSWORD": "mini_pm",
-#         "HOST": "db",
-#         "PORT": 5432,
-#     }
-# }
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "project_management",
+        "USER": "postgres",
+        "PASSWORD": "1212",
+        "HOST": "localhost",
+        "PORT": 5432,
+    }
+}
 
 GRAPHENE = {
     "SCHEMA": "config.schema.schema",
