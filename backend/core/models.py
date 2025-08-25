@@ -1,15 +1,40 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
+from core.managers import UserManager
+from django.utils.text import slugify
+# class Organization(models.Model):
+#     name = models.CharField(max_length=100)
+#     slug = models.SlugField(unique=True)
+#     contact_email = models.EmailField()
+#     created_at = models.DateTimeField(auto_now_add=True)
+
+#     def __str__(self):
+#         return self.name
 
 class Organization(models.Model):
     name = models.CharField(max_length=100)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, blank=True, null=True)
     contact_email = models.EmailField()
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        if not self.slug and self.name:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.name
-
-
+    
+class User(AbstractUser):
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="users",
+        null=True,      # <-- allow null
+        blank=True      # <-- allow blank
+    )
+    objects = UserManager() 
+    
 class Project(models.Model):
     STATUS_CHOICES = [
         ("ACTIVE", "Active"),

@@ -1,7 +1,12 @@
+from django.http import JsonResponse
 import graphene
 from graphql import GraphQLError
 from .models import Organization, Project, Task, TaskComment
-from .queries import OrganizationType, ProjectType, TaskType, TaskCommentType
+from .queries import OrganizationType, ProjectType, TaskType, TaskCommentType, UserType
+from django.contrib.auth import authenticate, login, logout, get_user_model
+from django.utils.text import slugify
+
+User = get_user_model()
 
 class CreateOrganization(graphene.Mutation):
     class Arguments:
@@ -41,9 +46,17 @@ class CreateProject(graphene.Mutation):
         except Organization.DoesNotExist:
             raise GraphQLError("Organization not found.")
         
+        base_slug = slugify(name)
+        slug = base_slug
+        counter = 1
+        # Ensure uniqueness
+        while Project.objects.filter(slug=slug, organization=org).exists():
+            slug = f"{base_slug}-{counter}"
+            counter += 1
         project = Project.objects.create(
             organization=org,
             name=name,
+            slug=slug,
             description=description,
             status=status,
             due_date=due_date
@@ -148,9 +161,63 @@ class CreateTaskComment(graphene.Mutation):
         )
         return CreateTaskComment(comment=comment)
 
+class Login(graphene.Mutation):
+    class Arguments:
+        username = graphene.String(required=True)
+        password = graphene.String(required=True)
+
+    user = graphene.Field(UserType)
+
+    def mutate(self, info, username, password):
+        request = info.context
+        user = authenticate(request, username=username, password=password)
+        if not user:
+            raise Exception("Invalid username or password")
+
+        login(request, user)  
+        request.session.save()
+        return Login(user=user)
+
+class Signup(graphene.Mutation):
+    class Arguments:
+        username = graphene.String(required=True)
+        password = graphene.String(required=True)
+        organization_name = graphene.String(required=True)
+
+    # user = graphene.String()
+    # organization = graphene.String()
+    # user = graphene.Field(UserType)
+    # organization = graphene.Field(OrganizationType)
+    user = graphene.Field(lambda: graphene.String)
+    organization = graphene.Field(lambda: graphene.String)
+
+    def mutate(self, info, username, password, organization_name):
+        org, created = Organization.objects.get_or_create(
+            name=organization_name,
+            defaults={"slug": organization_name.lower().replace(" ", "-")},
+        )
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            organization=org,
+            is_staff=True  # org-level admin
+        )
+
+        return Signup(user=user.username, organization=org.name)
+    
+class Logout(graphene.Mutation):
+    success = graphene.Boolean()
+
+    def mutate(self, info):
+        logout(info.context)
+        return Logout(success=True)
+    
 class Mutation(graphene.ObjectType):
     create_organization = CreateOrganization.Field()
     create_project = CreateProject.Field()
     create_task = CreateTask.Field()
     update_task = UpdateTask.Field()
     create_task_comment = CreateTaskComment.Field()
+    login = Login.Field()
+    logout = Logout.Field()
+    signup = Signup.Field()
