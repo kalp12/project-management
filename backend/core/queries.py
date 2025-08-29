@@ -24,10 +24,26 @@ class UserType(DjangoObjectType):
     def resolve_organization(self, info):
         return getattr(self, "organization", None)
 
+class TaskType(DjangoObjectType):
+    comments = graphene.List(lambda: TaskCommentType) 
+    
+    class Meta:
+        model = Task
+        fields = ("id", "title", "status", "description", "project", "assignee_email")
+        
+    def resolve_comments(self, info):
+        return TaskComment.objects.filter(task=self)
+
+class TaskCommentType(DjangoObjectType):
+    class Meta:
+        model = TaskComment
+        fields = ("id", "content", "author_email", "timestamp", "task")
+
+
 class ProjectType(DjangoObjectType):
     task_count = graphene.Int()
     completion_rate = graphene.Float()
-
+    tasks = graphene.List(TaskType)
     class Meta:
         model = Project
         fields = ("id", "name", "slug", "description",  "status", "due_date")
@@ -39,20 +55,10 @@ class ProjectType(DjangoObjectType):
         total = self.tasks.count()
         done = self.tasks.filter(status="DONE").count()
         return (done / total) * 100 if total > 0 else 0
-
-
-class TaskType(DjangoObjectType):
-    class Meta:
-        model = Task
-        fields = ("id", "title", "status", "description", "project")
-
-
-class TaskCommentType(DjangoObjectType):
-    class Meta:
-        model = TaskComment
-        fields = ("id", "content", "author", "created_at")
-
-
+    
+    def resolve_tasks(self, info):
+        return Task.objects.filter(project=self)
+    
 # === QUERY ROOT ===
 class Query(graphene.ObjectType):
     # new
@@ -131,8 +137,8 @@ class Query(graphene.ObjectType):
 
     def resolve_tasks(root, info, organization_slug, project_slug):
         return Task.objects.filter(
-            project__slug=project_slug,
             project__organization__slug=organization_slug,
+            project__slug=project_slug
         )
 
     def resolve_comments(root, info, organization_slug, project_slug, task_id):

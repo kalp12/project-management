@@ -184,10 +184,6 @@ class Signup(graphene.Mutation):
         password = graphene.String(required=True)
         organization_name = graphene.String(required=True)
 
-    # user = graphene.String()
-    # organization = graphene.String()
-    # user = graphene.Field(UserType)
-    # organization = graphene.Field(OrganizationType)
     user = graphene.Field(lambda: graphene.String)
     organization = graphene.Field(lambda: graphene.String)
 
