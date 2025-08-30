@@ -16,5 +16,21 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
 
 export const client = new ApolloClient({
   link: errorLink.concat(httpLink),
-  cache: new InMemoryCache(),
+  cache: new InMemoryCache({
+    typePolicies: {
+      TaskType: {
+        fields: {
+          comments: {
+            merge(existing = [], incoming = []) {
+              const merged = [...existing, ...incoming];
+              const unique = Array.from(
+                new Map(merged.map((c) => [c.__ref, c])).values()
+              );
+              return unique;
+            },
+          },
+        },
+      },
+    },
+  }),
 });

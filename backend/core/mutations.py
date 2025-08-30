@@ -63,6 +63,36 @@ class CreateProject(graphene.Mutation):
         )
         return CreateProject(project=project)
 
+class UpdateProject(graphene.Mutation):
+    class Arguments:
+        organization_slug = graphene.String(required=True)
+        project_id = graphene.ID(required=True)
+        name = graphene.String()
+        description = graphene.String()
+        status = graphene.String()
+        due_date = graphene.types.datetime.Date()
+
+    project = graphene.Field(ProjectType)
+
+    @classmethod
+    def mutate(cls, root, info, organization_slug, project_id, name=None, description=None, status=None, due_date=None):
+        try:
+            project = Project.objects.get(id=int(project_id), organization__slug=organization_slug)
+        except Project.DoesNotExist:
+            raise GraphQLError("Project not found in this organization.")
+
+        if name is not None:
+            project.name = name
+        if description is not None:
+            project.description = description
+        if status is not None:
+            project.status = status
+        if due_date is not None:
+            project.due_date = due_date
+
+        project.save()
+        return UpdateProject(project=project)
+
 class CreateTask(graphene.Mutation):
     class Arguments:
         organization_slug = graphene.String(required=True)
@@ -99,7 +129,7 @@ class UpdateTask(graphene.Mutation):
     class Arguments:
         organization_slug = graphene.String(required=True)
         project_slug = graphene.String(required=True)
-        task_id = graphene.Int(required=True)
+        task_id = graphene.ID(required=True)   
         title = graphene.String()
         description = graphene.String()
         status = graphene.String()
@@ -112,7 +142,7 @@ class UpdateTask(graphene.Mutation):
     def mutate(cls, root, info, organization_slug, project_slug, task_id, title=None, description=None, status=None, assignee_email=None, due_date=None):
         try:
             task = Task.objects.get(
-                id=task_id,
+                id= int(task_id),
                 project__slug=project_slug,
                 project__organization__slug=organization_slug
             )
@@ -211,6 +241,7 @@ class Logout(graphene.Mutation):
 class Mutation(graphene.ObjectType):
     create_organization = CreateOrganization.Field()
     create_project = CreateProject.Field()
+    update_project = UpdateProject.Field()
     create_task = CreateTask.Field()
     update_task = UpdateTask.Field()
     create_task_comment = CreateTaskComment.Field()

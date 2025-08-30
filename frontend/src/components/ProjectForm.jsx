@@ -27,13 +27,44 @@ const CREATE_PROJECT = gql`
   }
 `;
 
+const UPDATE_PROJECT = gql`
+  mutation UpdateProject(
+    $organizationSlug: String!
+    $projectId: ID!
+    $name: String!
+    $description: String
+    $status: String!
+    $dueDate: Date
+  ) {
+    updateProject(
+      organizationSlug: $organizationSlug
+      projectId: $projectId
+      name: $name
+      description: $description
+      status: $status
+      dueDate: $dueDate
+    ) {
+      project {
+        id
+        name
+        status
+        description
+        dueDate
+      }
+    }
+  }
+`;
+
 export default function ProjectForm({ organizationSlug, project, onClose }) {
   const [name, setName] = useState(project?.name || "");
   const [description, setDescription] = useState(project?.description || "");
   const [status, setStatus] = useState(project?.status || "ACTIVE");
   const [dueDate, setDueDate] = useState(project?.dueDate || "");
 
-  const [createProject, { loading, error }] = useMutation(CREATE_PROJECT);
+  const [createProject, { loading: creating, error: createError }] =
+    useMutation(CREATE_PROJECT);
+  const [updateProject, { loading: updating, error: updateError }] =
+    useMutation(UPDATE_PROJECT);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,25 +73,42 @@ export default function ProjectForm({ organizationSlug, project, onClose }) {
       return;
     }
 
-    await createProject({
-      variables: {
-        organizationSlug,
-        name,
-        description,
-        status,
-        dueDate: dueDate || null,
-      },
-    });
+    if (project) {
+      await updateProject({
+        variables: {
+          organizationSlug,
+          projectId: project.id,
+          name,
+          description,
+          status,
+          dueDate: dueDate || null,
+        },
+      });
+    } else {
+      
+      await createProject({
+        variables: {
+          organizationSlug,
+          name,
+          description,
+          status,
+          dueDate: dueDate || null,
+        },
+      });
+    }
 
     onClose();
   };
-
   return (
     <div className="bg-white shadow-lg rounded-xl p-6 mb-6">
       <h2 className="text-xl font-semibold mb-4">
         {project ? "Edit Project" : "Create New Project"}
       </h2>
-      {error && <p className="text-red-500">{error.message}</p>}
+      {(createError || updateError) && (
+        <p className="text-red-500">
+          {createError?.message || updateError?.message}
+        </p>
+      )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Name</label>
@@ -116,10 +164,10 @@ export default function ProjectForm({ organizationSlug, project, onClose }) {
           </button>
           <button
             type="submit"
-            disabled={loading}
+            disabled={(creating || updating)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            {loading ? "Saving..." : "Save"}
+            {creating || updating ? "Saving..." : "Save"}
           </button>
         </div>
       </form>

@@ -29,7 +29,7 @@ class TaskType(DjangoObjectType):
     
     class Meta:
         model = Task
-        fields = ("id", "title", "status", "description", "project", "assignee_email")
+        fields = ("id", "title", "status", "description", "project", "assignee_email", "due_date")
         
     def resolve_comments(self, info):
         return TaskComment.objects.filter(task=self)
