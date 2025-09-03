@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery, gql } from "@apollo/client";
+import { useQuery, gql, useMutation } from "@apollo/client";
 import ProjectForm from "../components/ProjectForm.jsx";
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
@@ -16,6 +16,13 @@ const PROJECTS_QUERY = gql`
     }
   }
 `;
+const DELETE_PROJECT = gql`
+  mutation DeleteProject($organizationSlug: String!, $projectId: ID!) {
+    deleteProject(organizationSlug: $organizationSlug, projectId: $projectId){
+    success
+    }
+    }
+`;
 
 export default function ProjectsPage({ organizationSlug }) {
   const { user } = useAuth();
@@ -23,6 +30,7 @@ export default function ProjectsPage({ organizationSlug }) {
     variables: { organizationSlug: user?.organization?.slug || "" },
     skip: !user,
   });
+  const [deleteProject] = useMutation(DELETE_PROJECT);
 
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
@@ -102,6 +110,38 @@ export default function ProjectsPage({ organizationSlug }) {
               >
                 View Tasks
               </Link>
+              <button
+                onClick={async () => {
+                  if (window.confirm("Are you sure you want to delete this project?")) {
+                    try {
+                      await deleteProject({
+                        variables: {
+                          organizationSlug: user?.organization?.slug || "",
+                          projectId: project.id,
+                        },
+                        update: (cache, { data }) => {
+                          if (data?.deleteProject?.success) {
+                            cache.modify({
+                              fields: {
+                                projects(existingProjects = [], { readField }) {
+                                  return existingProjects.filter(
+                                    (projRef) => readField("id", projRef) !== project.id
+                                  );
+                                },
+                              },
+                            });
+                          }
+                        },
+                      });
+                    } catch (error) {
+                      console.error("Error deleting project:", error);
+                    }
+                  }
+                }}
+                className="mt-3 text-red-600 hover:underline text-sm"
+              >
+                Delete
+              </button>
             </span>
 
           </div>

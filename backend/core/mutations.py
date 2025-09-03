@@ -93,6 +93,22 @@ class UpdateProject(graphene.Mutation):
         project.save()
         return UpdateProject(project=project)
 
+class DeleteProject(graphene.Mutation):
+    class Arguments:
+        organization_slug = graphene.String(required=True)
+        project_id = graphene.ID(required=True)
+
+    success = graphene.Boolean()
+
+    @classmethod
+    def mutate(cls, root, info, organization_slug, project_id):
+        try:
+            project = Project.objects.get(id=int(project_id), organization__slug=organization_slug)
+            project.delete()
+            return DeleteProject(success=True)
+        except Project.DoesNotExist:
+            raise GraphQLError("Project not found in this organization.")
+
 class CreateTask(graphene.Mutation):
     class Arguments:
         organization_slug = graphene.String(required=True)
@@ -248,3 +264,4 @@ class Mutation(graphene.ObjectType):
     login = Login.Field()
     logout = Logout.Field()
     signup = Signup.Field()
+    delete_project = DeleteProject.Field()

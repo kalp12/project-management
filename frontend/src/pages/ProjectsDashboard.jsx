@@ -8,8 +8,21 @@ const GET_PROJECTS = gql`
       id
       name
       description
-      taskCount
+      taskCount 
       completionRate
+    }
+  }
+`;
+
+const PROJECTS_QUERY = gql`
+  query Projects($organizationSlug: String!) {
+    projects(organizationSlug: $organizationSlug) {
+      id
+      name
+      slug
+      description
+      status
+      dueDate
     }
   }
 `;
@@ -32,8 +45,11 @@ const CREATE_PROJECT = gql`
       project {
         id
         name
+        slug
         description
         status
+        dueDate
+        
       }
     }
   }
@@ -54,10 +70,26 @@ export default function ProjectsDashboard() {
     skip: !user,
   });
 
-  const [createProject, { loading: creating }] = useMutation(CREATE_PROJECT, {
-    onCompleted: () => {
-      refetch();
-      setForm({ name: "", description: "", status: "ACTIVE", dueDate: "" });
+  // const [createProject, { loading: creating }] = useMutation(CREATE_PROJECT, {
+  //   onCompleted: () => {
+  //     refetch();
+  //     setForm({ name: "", description: "", status: "ACTIVE", dueDate: "" });
+  //   },
+  // });
+  const [createProject, { loading: creating, error: createError }] = useMutation(CREATE_PROJECT, {
+    update: (cache, { data: { createProject } }) => {
+      const newProject = createProject.project;
+      const existing = cache.readQuery({
+        query: PROJECTS_QUERY,
+        variables: { organizationSlug: user?.organization?.slug || "" },
+      });
+      cache.writeQuery({
+        query: PROJECTS_QUERY,
+        variables: { organizationSlug: user?.organization?.slug || "" },
+        data: {
+          projects: [...(existing?.projects || []), newProject],
+        },
+      });
     },
   });
 

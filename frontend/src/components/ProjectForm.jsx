@@ -19,6 +19,7 @@ const CREATE_PROJECT = gql`
       project {
         id
         name
+        slug
         status
         description
         dueDate
@@ -47,10 +48,24 @@ const UPDATE_PROJECT = gql`
       project {
         id
         name
+        slug
         status
         description
         dueDate
       }
+    }
+  }
+`;
+
+const PROJECTS_QUERY = gql`
+  query Projects($organizationSlug: String!) {
+    projects(organizationSlug: $organizationSlug) {
+      id
+      name
+      slug
+      description
+      status
+      dueDate
     }
   }
 `;
@@ -61,10 +76,43 @@ export default function ProjectForm({ organizationSlug, project, onClose }) {
   const [status, setStatus] = useState(project?.status || "ACTIVE");
   const [dueDate, setDueDate] = useState(project?.dueDate || "");
 
-  const [createProject, { loading: creating, error: createError }] =
-    useMutation(CREATE_PROJECT);
-  const [updateProject, { loading: updating, error: updateError }] =
-    useMutation(UPDATE_PROJECT);
+  // const [createProject, { loading: creating, error: createError }] =
+  //   useMutation(CREATE_PROJECT);
+  // const [updateProject, { loading: updating, error: updateError }] =
+  //   useMutation(UPDATE_PROJECT);
+  const [createProject, { loading: creating, error: createError }] = useMutation(CREATE_PROJECT, {
+  update: (cache, { data: { createProject } }) => {
+    const newProject = createProject.project;
+    const existing = cache.readQuery({
+      query: PROJECTS_QUERY,
+      variables: { organizationSlug: organizationSlug },
+    });
+    cache.writeQuery({
+      query: PROJECTS_QUERY,
+      variables: { organizationSlug: organizationSlug },
+      data: {
+        projects: [...(existing?.projects || []), newProject],
+      },
+    });
+  },
+});
+
+const [updateProject, { loading: updating, error: updateError }] = useMutation(UPDATE_PROJECT, {
+  update: (cache, { data: { updateProject } }) => {
+    const updated = updateProject.project;
+    const updatedRef = cache.identify(updated);
+    cache.modify({
+      fields: {
+        projects(existingRefs = [], { readField }) {
+          return existingRefs.map((projRef) =>
+            readField("id", projRef) === updated.id ? {__ref: updatedRef} : projRef
+          );
+        },
+      },
+    });
+  },
+});
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
