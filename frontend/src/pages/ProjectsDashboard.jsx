@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, gql } from "@apollo/client";
 import { useAuth } from "../context/AuthContext";
+import { motion } from "framer-motion";
 
 const GET_PROJECTS = gql`
   query($organizationSlug: String!) {
@@ -70,12 +71,6 @@ export default function ProjectsDashboard() {
     skip: !user,
   });
 
-  // const [createProject, { loading: creating }] = useMutation(CREATE_PROJECT, {
-  //   onCompleted: () => {
-  //     refetch();
-  //     setForm({ name: "", description: "", status: "ACTIVE", dueDate: "" });
-  //   },
-  // });
   const [createProject, { loading: creating, error: createError }] = useMutation(CREATE_PROJECT, {
     update: (cache, { data: { createProject } }) => {
       const newProject = createProject.project;
@@ -132,16 +127,26 @@ export default function ProjectsDashboard() {
   if (loading) return <p>Loading projects...</p>;
   if (error) return <p className="text-red-500">Error: {error.message}</p>;
 
-  return (
+    return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
       {/* Project List */}
       <div className="lg:col-span-2 space-y-4">
-        <h2 className="text-xl font-semibold">Projects</h2>
+        <motion.h2
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="text-xl font-semibold"
+        >
+          Projects
+        </motion.h2>
         {data?.projects?.length ? (
           data.projects.map((p) => (
-            <div
+            <motion.div
               key={p.id}
-              className="border rounded-xl p-4 shadow-sm bg-white flex justify-between items-center"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="border rounded-xl p-4 shadow-sm bg-white flex justify-between items-center hover:shadow-lg transition-shadow duration-300"
             >
               <div>
                 <h3 className="font-semibold text-lg">{p.name}</h3>
@@ -157,15 +162,27 @@ export default function ProjectsDashboard() {
               >
                 {p.status}
               </span>
-            </div>
+            </motion.div>
           ))
         ) : (
-          <p>No projects found.</p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="text-gray-500 text-center"
+          >
+            No projects found.
+          </motion.p>
         )}
       </div>
 
       {/* Create Project Form */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
+        className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300"
+      >
         <h2 className="text-xl font-semibold mb-4">Create Project</h2>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
@@ -174,7 +191,7 @@ export default function ProjectsDashboard() {
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full border rounded-lg p-2"
+              className="w-full border rounded-lg p-2 transition-colors duration-300 focus:ring-2 focus:ring-blue-400"
             />
             {errors.name && (
               <p className="text-red-500 text-sm">{errors.name}</p>
@@ -188,7 +205,7 @@ export default function ProjectsDashboard() {
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
-              className="w-full border rounded-lg p-2"
+              className="w-full border rounded-lg p-2 transition-colors duration-300 focus:ring-2 focus:ring-blue-400"
             />
           </div>
 
@@ -197,7 +214,7 @@ export default function ProjectsDashboard() {
             <select
               value={form.status}
               onChange={(e) => setForm({ ...form, status: e.target.value })}
-              className="w-full border rounded-lg p-2"
+              className="w-full border rounded-lg p-2 transition-colors duration-300 focus:ring-2 focus:ring-blue-400"
             >
               <option value="ACTIVE">Active</option>
               <option value="ON_HOLD">On Hold</option>
@@ -214,19 +231,19 @@ export default function ProjectsDashboard() {
               type="date"
               value={form.dueDate}
               onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-              className="w-full border rounded-lg p-2"
+              className="w-full border rounded-lg p-2 transition-colors duration-300 focus:ring-2 focus:ring-blue-400"
             />
           </div>
 
           <button
             type="submit"
             disabled={creating}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors duration-300 disabled:opacity-50"
           >
             {creating ? "Creating..." : "Create Project"}
           </button>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 }

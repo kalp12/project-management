@@ -3,6 +3,7 @@ import { useQuery, useMutation, gql } from "@apollo/client";
 import { useAuth } from "../context/AuthContext";
 import { useParams } from "react-router-dom";
 import { useApolloClient } from "@apollo/client";
+import { motion, AnimatePresence } from "framer-motion";
 
 const GET_TASKS = gql`
   query GetTasks($organizationSlug: String!, $projectSlug: String!) {
@@ -137,63 +138,77 @@ function EditTaskModal({ task, onClose, onSave }) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-xl shadow-md w-full max-w-md">
-        <h2 className="text-lg font-semibold mb-4">Edit Task</h2>
-        <div className="space-y-3">
-          <input
-            name="title"
-            value={form.title}
-            onChange={handleChange}
-            placeholder="Title"
-            className="w-full border rounded p-2"
-          />
-          <textarea
-            name="description"
-            value={form.description}
-            onChange={handleChange}
-            placeholder="Description"
-            className="w-full border rounded p-2"
-          />
-          <input
-            name="assigneeEmail"
-            value={form.assigneeEmail}
-            onChange={handleChange}
-            placeholder="Assignee Email"
-            className="w-full border rounded p-2"
-          />
-          <input
-            type="date"
-            name="dueDate"
-            value={form.dueDate}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-          />
-          <select
-            name="status"
-            value={form.status}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-          >
-            {["TODO", "IN_PROGRESS", "DONE"].map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
-        <div className="mt-4 flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-1 bg-gray-300 rounded">
-            Cancel
-          </button>
-          <button
-            onClick={() => onSave(form)}
-            className="px-3 py-1 bg-blue-600 text-white rounded"
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
+   return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <motion.div
+          className="bg-white p-6 rounded-xl shadow-md w-full max-w-md"
+          initial={{ scale: 0.8 }}
+          animate={{ scale: 1 }}
+          exit={{ scale: 0.8 }}
+        >
+          <h2 className="text-lg font-semibold mb-4">Edit Task</h2>
+          <div className="space-y-3">
+            <input
+              name="title"
+              value={form.title}
+              onChange={handleChange}
+              placeholder="Title"
+              className="w-full border rounded p-2"
+            />
+            <textarea
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              placeholder="Description"
+              className="w-full border rounded p-2"
+            />
+            <input
+              name="assigneeEmail"
+              value={form.assigneeEmail}
+              onChange={handleChange}
+              placeholder="Assignee Email"
+              className="w-full border rounded p-2"
+            />
+            <input
+              type="date"
+              name="dueDate"
+              value={form.dueDate}
+              onChange={handleChange}
+              className="w-full border rounded p-2"
+            />
+            <select
+              name="status"
+              value={form.status}
+              onChange={handleChange}
+              className="w-full border rounded p-2"
+            >
+              {["TODO", "IN_PROGRESS", "DONE"].map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <button onClick={onClose} className="px-3 py-1 bg-gray-300 rounded">
+              Cancel
+            </button>
+            <button
+              onClick={() => onSave(form)}
+              className="px-3 py-1 bg-blue-600 text-white rounded"
+            >
+              Save
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -375,109 +390,141 @@ export default function TaskBoard() {
 
   const statuses = ["TODO", "IN_PROGRESS", "DONE"];
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6">
-      {/* TASK BOARD */}
-      {statuses.map((status) => (
-        <div key={status} className="bg-white rounded-xl shadow-md p-4">
-          <h2 className="text-lg font-semibold mb-4">{status.replace("_", " ")}</h2>
-          <div className="space-y-3">
-            {data?.tasks?.filter((t) => t.status === status).map((task) => (
-              
-              <div key={task.id} className="p-3 rounded-lg border bg-gray-50">
-                
-                <h3 className="font-medium">{task.title}</h3>
-                <p className="text-sm text-gray-600">{task.description}</p>
-                
-
-                {/* Status Dropdown */}
-                <div className="flex justify-between items-center mt-2">
-                <select
-                  value={task.status}
-                  onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                  className="mt-2 border rounded p-1 text-sm"
+return (
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6">
+    {/* TASK BOARD */}
+    {statuses.map((status) => (
+      <motion.div
+        key={status}
+        className="bg-white rounded-xl shadow-md p-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <h2 className="text-lg font-semibold mb-4">{status.replace("_", " ")}</h2>
+        <div className="space-y-3">
+          <AnimatePresence>
+            {data?.tasks
+              ?.filter((t) => t.status === status)
+              .map((task) => (
+                <motion.div
+                  key={task.id}
+                  className="p-3 rounded-lg border bg-gray-50"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  layout
                 >
-                  {statuses.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-                <button
-    onClick={() => setEditingTask(task)}
-    className="text-xs bg-yellow-500 text-white px-2 py-1 rounded"
-  >
-    Edit
-  </button>
-</div>
-                
+                  <h3 className="font-medium">{task.title}</h3>
+                  <p className="text-sm text-gray-600">{task.description}</p>
 
-                {/* Comments */}
-                <div className="mt-3">
-                  <h4 className="font-semibold text-xs">Comments</h4>
-                  {task.comments?.map((c) => (
-                    <p key={c.id} className="text-xs text-gray-700">
-                      <span className="font-medium">{c.authorEmail}:</span> {c.content}
-                    </p>
-                  ))}
-                  <div className="flex mt-2 gap-2">
-                    <input
-                      type="text"
-                      value={commentContent[task.id] || ""}
-                      onChange={(e) =>
-                        setCommentContent({ ...commentContent, [task.id]: e.target.value })
-                      }
-                      placeholder="Add comment..."
-                      className="flex-1 border rounded p-1 text-sm"
-                    />
-                    <button
-                      onClick={() => handleAddComment(Number(task.id))}
-                      className="text-xs bg-blue-600 text-white px-2 rounded"
+                  {/* Status Dropdown */}
+                  <div className="flex justify-between items-center mt-2">
+                    <select
+                      value={task.status}
+                      onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                      className="mt-2 border rounded p-1 text-sm"
                     >
-                      Add
+                      {statuses.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => setEditingTask(task)}
+                      className="text-xs bg-yellow-500 text-white px-2 py-1 rounded"
+                    >
+                      Edit
                     </button>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+
+                  {/* Comments */}
+                  <div className="mt-3">
+                    <h4 className="font-semibold text-xs">Comments</h4>
+                    <div className="space-y-1">
+                      <AnimatePresence>
+                        {task.comments?.map((c) => (
+                          <motion.p
+                            key={c.id}
+                            className="text-xs text-gray-700"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                          >
+                            <span className="font-medium">{c.authorEmail}:</span> {c.content}
+                          </motion.p>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                    <div className="flex mt-2 gap-2">
+                      <input
+                        type="text"
+                        value={commentContent[task.id] || ""}
+                        onChange={(e) =>
+                          setCommentContent({ ...commentContent, [task.id]: e.target.value })
+                        }
+                        placeholder="Add comment..."
+                        className="flex-1 border rounded p-1 text-sm"
+                      />
+                      <button
+                        onClick={() => handleAddComment(Number(task.id))}
+                        className="text-xs bg-blue-600 text-white px-2 rounded"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+          </AnimatePresence>
         </div>
-      ))}
+      </motion.div>
+    ))}
 
-      {/* CREATE TASK FORM */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        <h2 className="text-lg font-semibold mb-4">Create Task</h2>
-        <form className="space-y-3" onSubmit={handleCreateTask}>
-          <input
-            type="text"
-            placeholder="Title"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full border rounded-lg p-2"
-          />
-          <textarea
-            placeholder="Description"
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="w-full border rounded-lg p-2"
-          />
-          <select
-            value={form.status}
-            onChange={(e) => setForm({ ...form, status: e.target.value })}
-            className="w-full border rounded-lg p-2"
-          >
-            {statuses.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            disabled={creating}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg"
-          >
-            {creating ? "Creating..." : "Create Task"}
+    {/* CREATE TASK FORM */}
+    <motion.div
+      className="bg-white p-6 rounded-xl shadow-md"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <h2 className="text-lg font-semibold mb-4">Create Task</h2>
+      <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); handleCreateTask(); }}>
+        <input
+          type="text"
+          placeholder="Title"
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          className="w-full border rounded-lg p-2"
+        />
+        <textarea
+          placeholder="Description"
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          className="w-full border rounded-lg p-2"
+        />
+        <select
+          value={form.status}
+          onChange={(e) => setForm({ ...form, status: e.target.value })}
+          className="w-full border rounded-lg p-2"
+        >
+          {statuses.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          disabled={creating}
+          className="w-full bg-blue-600 text-white py-2 rounded-lg"
+        >
+          {creating ? "Creating..." : "Create Task"}
+        </button>
+      </form>
 
-          </button>
-        </form>
-
+      <AnimatePresence>
         {editingTask && (
           <EditTaskModal
             task={editingTask}
@@ -485,7 +532,7 @@ export default function TaskBoard() {
             onSave={handleSaveEdit}
           />
         )}
-      </div>
-    </div>
-  );
-}
+      </AnimatePresence>
+    </motion.div>
+  </div>
+)};

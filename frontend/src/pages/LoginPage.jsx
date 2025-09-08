@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { gql, useMutation } from "@apollo/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 
 const LOGIN = gql`
   mutation Login($username: String!, $password: String!) {
@@ -29,16 +29,13 @@ export default function LoginPage() {
 
   const [login, { loading, error }] = useMutation(LOGIN, {
     context: {
-      credentials: 'include', 
+      credentials: "include",
     },
     onCompleted: async (data) => {
-      console.log("Login completed:", data);
       try {
         await refreshUser();
         navigate("/projects");
-      } catch (refreshError) {
-        console.error("Refresh failed:", refreshError);
-        
+      } catch {
         if (data?.login?.user) {
           navigate("/projects");
         }
@@ -46,7 +43,7 @@ export default function LoginPage() {
     },
     onError: (error) => {
       console.error("Login error:", error);
-    }
+    },
   });
 
   const handleSubmit = (e) => {
@@ -54,8 +51,8 @@ export default function LoginPage() {
     login({
       variables: { username, password },
       context: {
-        credentials: 'include', 
-      }
+        credentials: "include",
+      },
     });
   };
 
@@ -64,7 +61,7 @@ export default function LoginPage() {
       await fetch("http://localhost:8000/logout/", {
         method: "POST",
         credentials: "include",
-        headers: { "X-CSRFToken": getCSRFToken() }
+        headers: { "X-CSRFToken": getCSRFToken() },
       });
       setMessage("Logged out successfully.");
     } catch {
@@ -73,51 +70,78 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-lg p-6 rounded-xl w-96"
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
+      
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="bg-white shadow-lg rounded-xl w-full max-w-md p-8 space-y-6"
       >
-        <h2 className="text-2xl font-bold mb-4">Login</h2>
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="w-full p-2 border rounded mb-3"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 border rounded mb-3"
-          required
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 rounded disabled:bg-gray-400"
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
+        <h2 className="text-3xl font-bold text-center text-gray-800">Login</h2>
 
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            type="submit"
+            disabled={loading}
+            className={`w-full py-3 rounded-lg text-white ${
+              loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+            }`}
+          >
+            {loading ? "Logging in..." : "Login"}
+          </motion.button>
+          {error && <p className="text-red-500 text-sm text-center">{error.message}</p>}
+        </form>
 
-        {error && <p className="text-red-500 mt-2">{error.message}</p>}
+        <div className="text-center text-sm text-gray-600">
+          <p>
+            Don't have an account?{" "}
+            <Link to="/signup" className="text-blue-600 hover:underline">
+              Sign up
+            </Link>
+          </p>
+        </div>
 
-      </form>
-      <div>
-        <p className="mt-4">
-          Don't have an account? <Link to="/signup" className="text-blue-600 underline">Sign up</Link>
-        </p>
         {user && (
-          <button onClick={handleLogout} className="mt-4 text-blue-600 underline">
-            Logout
-          </button>
+          <div className="text-center">
+            <button
+              onClick={handleLogout}
+              className="text-blue-600 hover:underline text-sm"
+            >
+              Logout
+            </button>
+          </div>
         )}
-      </div>
-    </div>
 
+        {message && (
+          <div className="text-center text-sm text-green-600">
+            {message}
+          </div>
+        )}
+      </motion.div>
+    </div>
   );
+}
+
+function getCSRFToken() {
+  const match = document.cookie.match(new RegExp('(^| )csrftoken=([^;]+)'));
+  return match ? match[2] : '';
 }

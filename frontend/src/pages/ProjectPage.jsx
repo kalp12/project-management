@@ -3,6 +3,7 @@ import { useQuery, gql, useMutation } from "@apollo/client";
 import ProjectForm from "../components/ProjectForm.jsx";
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion"; 
 
 const PROJECTS_QUERY = gql`
   query Projects($organizationSlug: String!) {
@@ -46,11 +47,13 @@ export default function ProjectsPage({ organizationSlug }) {
     ON_HOLD: "bg-yellow-100 text-yellow-800",
   };
 
-  return (
+return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Projects</h1>
-        <button
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => {
             setEditingProject(null);
             setShowForm(true);
@@ -58,94 +61,116 @@ export default function ProjectsPage({ organizationSlug }) {
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
         >
           + New Project
-        </button>
+        </motion.button>
       </div>
-
-      {showForm && (
-        <ProjectForm
-          organizationSlug={user?.organization?.slug || ""}
-          project={editingProject}
-          onClose={() => {
-            setShowForm(false);
-            setEditingProject(null);
-            refetch();
-          }}
-        />
-      )}
+          
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <ProjectForm
+              organizationSlug={user?.organization?.slug || ""}
+              project={editingProject}
+              onClose={() => {
+                setShowForm(false);
+                setEditingProject(null);
+                refetch();
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {projects.map((project) => (
-          <div
-            key={project.id}
-            className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition"
-          >
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-lg font-semibold">{project.name}</h2>
-              <span
-                className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[project.status] || "bg-gray-100 text-gray-800"
-                  }`}
-              >
-                {project.status}
-              </span>
+        <AnimatePresence>
+          {projects.map((project) => (
+            <motion.div
+              key={project.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-semibold">{project.name}</h2>
+                <span
+                  className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[project.status] || "bg-gray-100 text-gray-800"
+                    }`}
+                >
+                  {project.status}
+                </span>
+              </div>
+              <p className="text-gray-600 text-sm mb-2">{project.description}</p>
+              <p className="text-gray-500 text-xs">
+                Due: {project.dueDate || "No deadline"}
+              </p>
 
-            </div>
-            <p className="text-gray-600 text-sm mb-2">{project.description}</p>
-            <p className="text-gray-500 text-xs">
-              Due: {project.dueDate || "No deadline"}
-            </p>
+              <div className="mt-3 space-y-1">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setEditingProject(project);
+                    setShowForm(true);
+                  }}
+                  className="text-blue-600 hover:underline text-sm"
+                >
+                  Edit
+                </motion.button>
 
-            <span className="text-gray-500 text-xs block mt-1">
-              <button
-                onClick={() => {
-                  setEditingProject(project);
-                  setShowForm(true);
-                }}
-                className="mt-3 text-blue-600 hover:underline text-sm"
-              >
-                Edit
-              </button>
-              <Link
-                to={`/projects/${project.slug}/tasks`}
-                className="mt-3 block text-blue-600 hover:underline text-sm"
-              >
-                View Tasks
-              </Link>
-              <button
-                onClick={async () => {
-                  if (window.confirm("Are you sure you want to delete this project?")) {
-                    try {
-                      await deleteProject({
-                        variables: {
-                          organizationSlug: user?.organization?.slug || "",
-                          projectId: project.id,
-                        },
-                        update: (cache, { data }) => {
-                          if (data?.deleteProject?.success) {
-                            cache.modify({
-                              fields: {
-                                projects(existingProjects = [], { readField }) {
-                                  return existingProjects.filter(
-                                    (projRef) => readField("id", projRef) !== project.id
-                                  );
+                <motion.div whileHover={{ scale: 1.02 }}>
+                  <Link
+                    to={`/projects/${project.slug}/tasks`}
+                    className="text-blue-600 hover:underline text-sm block"
+                  >
+                    View Tasks
+                  </Link>
+                </motion.div>
+
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={async () => {
+                    if (window.confirm("Are you sure you want to delete this project?")) {
+                      try {
+                        await deleteProject({
+                          variables: {
+                            organizationSlug: user?.organization?.slug || "",
+                            projectId: project.id,
+                          },
+                          update: (cache, { data }) => {
+                            if (data?.deleteProject?.success) {
+                              cache.modify({
+                                fields: {
+                                  projects(existingProjects = [], { readField }) {
+                                    return existingProjects.filter(
+                                      (projRef) =>
+                                        readField("id", projRef) !== project.id
+                                    );
+                                  },
                                 },
-                              },
-                            });
-                          }
-                        },
-                      });
-                    } catch (error) {
-                      console.error("Error deleting project:", error);
+                              });
+                            }
+                          },
+                        });
+                      } catch (error) {
+                        console.error("Error deleting project:", error);
+                      }
                     }
-                  }
-                }}
-                className="mt-3 text-red-600 hover:underline text-sm"
-              >
-                Delete
-              </button>
-            </span>
-
-          </div>
-        ))}
+                  }}
+                  className="text-red-600 hover:underline text-sm"
+                >
+                  Delete
+                </motion.button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   );

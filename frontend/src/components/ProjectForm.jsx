@@ -76,10 +76,6 @@ export default function ProjectForm({ organizationSlug, project, onClose }) {
   const [status, setStatus] = useState(project?.status || "ACTIVE");
   const [dueDate, setDueDate] = useState(project?.dueDate || "");
 
-  // const [createProject, { loading: creating, error: createError }] =
-  //   useMutation(CREATE_PROJECT);
-  // const [updateProject, { loading: updating, error: updateError }] =
-  //   useMutation(UPDATE_PROJECT);
   const [createProject, { loading: creating, error: createError }] = useMutation(CREATE_PROJECT, {
   update: (cache, { data: { createProject } }) => {
     const newProject = createProject.project;
